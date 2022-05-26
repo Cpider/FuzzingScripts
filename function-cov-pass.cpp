@@ -22,7 +22,6 @@
 #include "llvm/IR/Function.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
-#include "llvm/IR/DebugInfoMetadata.h"
 
 using namespace llvm;
 
@@ -31,32 +30,33 @@ cl::opt<std::string> OutFile(
     cl::desc("Print Function Coverage Name."),
     cl::value_desc("Funciton name output"));
 
-namespace
-{
-    class FunctionCoverage : public ModulePass
-    {
+namespace{
+    class FunctionCoverage : public ModulePass{
 
-    public:
+    public :
+
         static char ID;
-        FunctionCoverage() : ModulePass(ID) {}
+        FunctionCoverage() : ModulePass(ID){}
         bool seeded = false;
-        bool runOnModule(Module &M) override;
+        bool runOnModule(Module & M) override;
     };
 
+
+    
 }
 
 char FunctionCoverage::ID = 0;
 
-bool FunctionCoverage ::runOnModule(Module &M)
-{
+bool FunctionCoverage :: runOnModule(Module &M){
 
     std::ofstream namefile(OutFile, std::ofstream::out | std::ofstream::app);
+
 
     LLVMContext &C = M.getContext();
     IntegerType *Int8Ty = IntegerType::getInt8Ty(C);
     IntegerType *Int32Ty = IntegerType::getInt32Ty(C);
     IntegerType *Int64Ty = IntegerType::getInt64Ty(C);
-    // GlobalVariable *output_fd = new GlobalVariable(M, PointerType::get(Int32Ty), false, GlobalValue::ExternalLinkage, 0, "outpu_fd",
+    // GlobalVariable *output_fd = new GlobalVariable(M, PointerType::get(Int32Ty), false, GlobalValue::ExternalLinkage, 0, "outpu_fd", 
     // 0, GlobalVariable::GeneralDynamicTLSModel, 0, false);
     Function *target_func = M.getFunction("puts");
     if (!target_func)
@@ -66,8 +66,7 @@ bool FunctionCoverage ::runOnModule(Module &M)
         target_func = Function::Create(FT, Function::ExternalLinkage, "puts", M);
     }
 
-    for (auto &F : M)
-    {
+    for(auto &F : M){
         std::string func_print;
         func_print = "Function: " + F.getName().str();
         StringRef Name(func_print);
@@ -93,10 +92,8 @@ bool FunctionCoverage ::runOnModule(Module &M)
         gvar_array__str->setInitializer(const_string);
         BasicBlock *instructed_bb;
 
-        if (F.begin() != F.end())
-            instructed_bb = (&(*(F.begin())));
-        else
-            continue;
+        if (F.begin() != F.end()) instructed_bb = (&(*(F.begin())));
+        else continue;
         BasicBlock::iterator IP = instructed_bb->getFirstInsertionPt();
         IRBuilder<> IRB(&(*IP));
 
@@ -105,13 +102,15 @@ bool FunctionCoverage ::runOnModule(Module &M)
         IRB.CreateCall(target_func, args);
         errs() << Name << " has instructed sucessed!\n";
         namefile << Name.str() << " has instructed sucessed!\n";
+
+
     }
     return true;
 }
-// clang plugin
-//  static void registerFunCovPass(const PassManagerBuilder &,
-//                              legacy::PassManagerBase &PM)
-//  {
+//clang plugin
+// static void registerFunCovPass(const PassManagerBuilder &,
+//                             legacy::PassManagerBase &PM)
+// {
 
 //     PM.add(new FunctionCoverage());
 // }
@@ -122,5 +121,5 @@ bool FunctionCoverage ::runOnModule(Module &M)
 // static RegisterStandardPasses RegisterFunCovPass0(
 //     PassManagerBuilder::EP_EnabledOnOptLevel0, registerFunCovPass);
 
-// opt plugin
+//opt plugin
 static RegisterPass<FunctionCoverage> X("funcov", "hello world pass", false, false);
